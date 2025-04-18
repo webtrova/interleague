@@ -1,0 +1,61 @@
+@import url('https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --background: #111111;
+    --foreground: #ededed;
+    --card: #18181b;
+    --card-foreground: #ededed;
+    --popover: #18181b;
+    --popover-foreground: #ededed;
+    --primary: #111111;
+    --primary-foreground: #ededed;
+    --secondary: #a259f7;
+    --secondary-foreground: #fff;
+    --muted: #23232a;
+    --muted-foreground: #bcbcbc;
+    --accent: #a259f7;
+    --accent-foreground: #fff;
+    --destructive: #e3342f;
+    --destructive-foreground: #fff;
+    --border: #23232a;
+    --input: #23232a;
+    --ring: #a259f7;
+    --radius: 0.5rem;
+  }
+
+  html, body {
+    font-family: 'Poppins', Arial, Helvetica, sans-serif;
+    background-color: var(--background);
+    color: var(--foreground);
+  }
+
+  h1, h2, h3, h4, h5, h6 {
+    font-family: 'Poppins', Arial, Helvetica, sans-serif;
+    font-weight: 600;
+    letter-spacing: -0.01em;
+  }
+
+  body {
+    @apply bg-background text-foreground antialiased;
+  }
+}
+
+@keyframes bounce-slow {
+  0%, 100% { transform: translateY(0);}
+  50% { transform: translateY(-20px);}
+}
+.animate-bounce-slow {
+  animation: bounce-slow 4s infinite;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --background: #0a0a0a;
+    --foreground: #ededed;
+  }
+}
