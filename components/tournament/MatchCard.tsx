@@ -27,11 +27,11 @@ export const MatchCard = ({
   isEditable = true,
   selectedLeague
 }: MatchCardProps) => {
-  const getTeamLogoPath = (teamName: string) => {
-    const fileName = teamName.replace(/ /g, "-") + ".png";
-    const folder = selectedLeague === League.MLB ? "/mlb-teams/" : "/nfl-teams/";
-    return `${folder}${fileName}`;
-  };
+const getTeamLogoPath = (teamName: string) => {
+  const fileName = teamName.replace(/ /g, "-").toLowerCase() + ".png";
+  const folder = selectedLeague === League.MLB ? "/mlb-teams/" : "/nfl-teams/";
+  return `${folder}${fileName}`;
+};
 
   const team1Logo = match.team1 ? getTeamLogoPath(match.team1.name) : "";
   const team2Logo = match.team2 ? getTeamLogoPath(match.team2.name) : "";
