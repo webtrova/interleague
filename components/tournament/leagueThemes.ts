@@ -20,7 +20,7 @@ export const leagueThemes: Record<
     loser: "bg-red-50 text-red-700",
     championship: "bg-purple-50 text-purple-700",
     button: "bg-[#f0f0f0] text-black",
-    buttonHover: "hover:bg-[#020105]",
+    buttonHover: "hover:bg-[#9e9e9e]",
     input: "border-[#092668] focus:ring-[#092668]"
   },
   NFL: {
@@ -30,7 +30,18 @@ export const leagueThemes: Record<
     loser: "bg-red-50 text-red-700",
     championship: "bg-purple-50 text-purple-700",
     button: "bg-[#092668] text-white",
-    buttonHover: "hover:bg-[#020105]",
+    buttonHover: "hover:bg-[#020105] text-white",
+    input: "border-[#092668] focus:ring-[#092668]"
+  },
+
+  NBA: {
+    bg: "bg-[#1d428a]",
+    border: "border-[#c8102e]",
+    winner: "bg-[#ffffff] text-[#1d428a] font-size-2xl  font-bold",
+    loser: "bg-red-50 text-red-700",
+    championship: "bg-purple-50 text-purple-700",
+    button: "bg-white text-[#1d428a]",
+    buttonHover: "hover:bg-[#c8102e]",
     input: "border-[#092668] focus:ring-[#092668]"
   },
   default: {

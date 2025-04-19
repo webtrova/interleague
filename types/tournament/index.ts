@@ -1,9 +1,11 @@
 export * as mlbTeams from "./mlb-teams";
 export * as nflTeams from "./nfl-teams";
+export * as nbaTeams from "./nba-teams";
 
 export enum League {
   MLB = "MLB",
-  NFL = "NFL"
+  NFL = "NFL",
+  NBA = "NBA"
 }
 
 export * from "./matches";

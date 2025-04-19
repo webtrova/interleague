@@ -5,6 +5,7 @@ import Link from "next/link";
 import Image from "next/image";
 import Carousel from "@/components/Carousel"; // Implemented separately!
 import HeroSection from "@/components/HeroSection";
+import SplashAuthGuard from "@/components/SplashAuthGuard";
 
 const Home = () => {
   const { data: session } = useSession();
@@ -32,4 +33,10 @@ const Home = () => {
   );
 };
 
-export default Home;
+export default function HomeWithAuth() {
+  return (
+    <SplashAuthGuard>
+      <Home />
+    </SplashAuthGuard>
+  );
+}

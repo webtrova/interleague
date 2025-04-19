@@ -4,7 +4,7 @@ import type { Tournament } from "@/types/tournament/matches";
 
 import { TournamentBracket } from "@/components/tournament/TournamentBracket";
 import type { Team } from "@/types/tournament/mlb-teams";
-import { mlbTeams, nflTeams, League, Match } from "@/types/tournament";
+import { mlbTeams, nflTeams, nbaTeams, League, Match } from "@/types/tournament";
 
 import {
   createInitialRounds,
@@ -13,7 +13,9 @@ import {
 } from "@/types/tournament/matches";
 import { useState, useCallback, useEffect } from "react";
 
-export default function TournamentPage() {
+import SplashAuthGuard from "@/components/SplashAuthGuard";
+
+function TournamentPageContent() {
   const [selectedLeague, setSelectedLeague] = useState<League>(League.MLB);
   const [tournament, setTournament] = useState<Tournament>(() => {
     // Clear any cached state
@@ -57,7 +59,14 @@ export default function TournamentPage() {
 
   // Reset tournament handler
   const handleReset = useCallback(() => {
-    const leagueTeams = selectedLeague === League.MLB ? mlbTeams.teams : nflTeams.teams;
+    let leagueTeams;
+    if (selectedLeague === League.MLB) {
+      leagueTeams = mlbTeams.teams;
+    } else if (selectedLeague === League.NFL) {
+      leagueTeams = nflTeams.teams;
+    } else {
+      leagueTeams = nbaTeams.teams;
+    }
     leagueTeams.forEach((team) => (team.losses = 0));
     setTournament(createInitialRounds(leagueTeams));
   }, [selectedLeague]);
@@ -77,40 +86,79 @@ export default function TournamentPage() {
           </button>
         </div>
         {/* League Switcher */}
-        <div className="flex justify-center mb-6 gap-0">
-  <button
-    className={`flex items-center gap-2 px-4 py-2 rounded-l border border-r-0 ${selectedLeague === League.MLB ? 'bg-blue-600 text-white border-blue-600' : 'bg-gray-200 text-gray-700 border-gray-300'}`}
-    onClick={() => {
-      setSelectedLeague(League.MLB);
-      setTournament(createInitialRounds(mlbTeams.teams));
-    }}
-    aria-label="Switch to MLB"
-  >
-    <img
-      src="/mlb-teams/mlb_logo.png"
-      alt="MLB Logo"
-      className="w-6 h-6"
-      style={{ filter: selectedLeague === League.MLB ? 'none' : 'grayscale(1) brightness(1.2)' }}
-    />
-    MLB
-  </button>
-  <button
-    className={`flex items-center gap-2 px-4 py-2 rounded-r border ${selectedLeague === League.NFL ? 'bg-blue-600 text-white border-blue-600' : 'bg-gray-200 text-gray-700 border-gray-300'}`}
-    onClick={() => {
-      setSelectedLeague(League.NFL);
-      setTournament(createInitialRounds(nflTeams.teams));
-    }}
-    aria-label="Switch to NFL"
-  >
-    <img
-      src="/nfl-teams/nfl_logo.png"
-      alt="NFL Logo"
-      className="w-6 h-6"
-      style={{ filter: selectedLeague === League.NFL ? 'none' : 'grayscale(1) brightness(1.2)' }}
-    />
-    NFL
-  </button>
-</div>
+        <div className="flex justify-center mb-6 gap-4">
+          {/* Stylish League Buttons */}
+          <button
+            className={`flex flex-col items-center px-6 py-3 rounded-xl border-2 shadow-md transition-all duration-200
+      ${
+        selectedLeague === League.MLB
+          ? "bg-[#092668] border-[#092668] text-white scale-105"
+          : "bg-gray-100 border-gray-300 text-gray-700 hover:bg-blue-50"
+      }
+    `}
+            onClick={() => {
+              setSelectedLeague(League.MLB);
+              setTournament(createInitialRounds(mlbTeams.teams));
+            }}
+            aria-label="Select MLB"
+            type="button"
+          >
+            <div className="w-10 h-10 mb-1 flex items-center justify-center bg-transparent rounded">
+              <img
+                src="/mlb-teams/mlb_logo.png"
+                alt="MLB Logo"
+                className="w-full h-full object-contain"
+              />
+            </div>
+            <span className="font-bold text-lg tracking-wide">MLB</span>
+          </button>
+          <button
+            className={`flex flex-col items-center px-6 py-3 rounded-xl border-2 shadow-md transition-all duration-200
+      ${
+        selectedLeague === League.NFL
+          ? "bg-[#002244] border-[#002244] text-white scale-105"
+          : "bg-gray-100 border-gray-300 text-gray-700 hover:bg-blue-50"
+      }
+    `}
+            onClick={() => {
+              setSelectedLeague(League.NFL);
+              setTournament(createInitialRounds(nflTeams.teams));
+            }}
+            aria-label="Select NFL"
+            type="button"
+          >
+            <img
+              src="/nfl-teams/nfl_logo.png"
+              alt="NFL Logo"
+              className="w-10 h-10 mb-1"
+            />
+            <span className="font-bold text-lg tracking-wide">NFL</span>
+          </button>
+          <button
+            className={`flex flex-col items-center px-6 py-3 rounded-xl border-2 shadow-md transition-all duration-200
+      ${
+        selectedLeague === League.NBA
+          ? "bg-[#1D428A] border-[#1D428A] text-white scale-105"
+          : "bg-gray-100 border-gray-300 text-gray-700 hover:bg-blue-50"
+      }
+    `}
+            onClick={() => {
+              setSelectedLeague(League.NBA);
+              setTournament(createInitialRounds(nbaTeams.teams));
+            }}
+            aria-label="Select NBA"
+            type="button"
+          >
+            <div className="w-10 h-10 mb-1 flex items-center justify-center bg-white rounded">
+              <img
+                src="/nba-teams/nba_logo.png"
+                alt="NBA Logo"
+                className="w-full h-full object-contain"
+              />
+            </div>
+            <span className="font-bold text-lg tracking-wide">NBA</span>
+          </button>
+        </div>
         {/* Tournament Bracket */}
         <TournamentBracket
           tournament={tournament}
@@ -123,7 +171,11 @@ export default function TournamentPage() {
           <div className="bg-blue-50 p-4 rounded-lg">
             <h3 className="font-semibold text-blue-900">Active Teams</h3>
             <p className="text-2xl text-blue-600">
-              {(selectedLeague === League.MLB ? mlbTeams.teams.length : nflTeams.teams.length) - tournament.eliminatedTeams.length}
+              {(selectedLeague === League.MLB
+                ? mlbTeams.teams.length
+                : selectedLeague === League.NFL
+                ? nflTeams.teams.length
+                : nbaTeams.teams.length) - tournament.eliminatedTeams.length}
             </p>
           </div>
           <div className="bg-red-50 p-4 rounded-lg overflow-auto max-h-40">
@@ -168,5 +220,12 @@ export default function TournamentPage() {
         */}
       </div>
     </div>
+  );
+}
+export default function TournamentPage() {
+  return (
+    <SplashAuthGuard>
+      <TournamentPageContent />
+    </SplashAuthGuard>
   );
 }
