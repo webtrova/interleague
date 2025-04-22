@@ -12,7 +12,7 @@ import { leagueThemes } from "./leagueThemes";
 interface MatchCardProps {
   match: Match;
   tournament: Tournament;
-  tableNumber: number; // Table number for display (1-16)
+  tableNumber: number | null; // Table number for display (1-16), can be null if not assigned
   onScoreUpdate?: (
     matchId: string,
     team1Score: number,
