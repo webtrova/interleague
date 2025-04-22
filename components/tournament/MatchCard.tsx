@@ -12,6 +12,7 @@ import { leagueThemes } from "./leagueThemes";
 interface MatchCardProps {
   match: Match;
   tournament: Tournament;
+  tableNumber: number; // Table number for display (1-16)
   onScoreUpdate?: (
     matchId: string,
     team1Score: number,
@@ -24,6 +25,7 @@ interface MatchCardProps {
 export const MatchCard = ({
   match,
   tournament,
+  tableNumber,
   onScoreUpdate,
   isEditable = true,
   selectedLeague
@@ -90,9 +92,21 @@ export const MatchCard = ({
       className={`w-full max-w-full rounded-2xl shadow-xl border-2 px-3 py-4 sm:px-6 sm:py-5 mb-4 font-poppins bg-gradient-to-br ${theme.bg} ${theme.border}`}
     >
       <div className="mb-2 flex justify-between items-center">
-        <span className="text-xs font-bold text-white tracking-wide uppercase">
-          Match {match.id}
-        </span>
+        {typeof tableNumber === "number" && (
+          <>
+            <span
+              className={`inline-flex items-center justify-center w-10 h-10 rounded-full text-lg font-bold shadow-md border-2 mr-2 ${theme.tableLabel}`}
+              title={`Table ${tableNumber}`}
+            >
+              {tableNumber}
+            </span>
+            <span
+              className={`text-xs font-bold tracking-wide uppercase px-2 py-1 rounded ${theme.tableLabel}`}
+            >
+              Table {tableNumber}
+            </span>
+          </>
+        )}
       </div>
 
       <div className="space-y-3">
@@ -177,21 +191,63 @@ export const MatchCard = ({
                 <motion.div
                   initial={{ opacity: 0, scale: 0.5 }}
                   animate={{ opacity: 1, scale: 1 }}
-                  transition={{ duration: 0.5 }}
-                  className={`font-bold text-lg text-white mt-3 text-center py-3 rounded-lg font-semibold text-lg ${theme.championship}`}
+                  transition={{ duration: 0.8, type: "spring", stiffness: 100 }}
+                  className={`relative mt-6 text-center py-6 rounded-xl overflow-hidden font-semibold`}
                 >
-                  <div className="flex items-center justify-center space-x-2">
-                    <span>🏆</span>
-                    <span className="text-purple-700">
-                      {match.winner.name} Wins the Championship!
-                    </span>
+                  {/* Background gradient with shimmer effect */}
+                  <div className="absolute inset-0 bg-gradient-to-br from-indigo-600 via-purple-600 to-pink-500 opacity-90"></div>
+                  <div className="absolute inset-0 bg-[url('/trophy-pattern.png')] opacity-10 bg-repeat"></div>
+
+                  {/* Animated confetti */}
+                  <div className="absolute top-2 left-4 text-3xl animate-bounce-slow delay-100">
+                    🎉
                   </div>
-                  {match.loser &&
-                    tournament.eliminatedTeams.includes(match.loser) && (
-                      <div className="font-bold text-lg text-white mt-1 font-semibold">
-                        {match.loser.name} Eliminated
+                  <div className="absolute top-2 right-4 text-3xl animate-bounce-slow delay-300">
+                    🎊
+                  </div>
+                  <div className="absolute bottom-2 left-10 text-2xl animate-bounce delay-200">
+                    🎉
+                  </div>
+                  <div className="absolute bottom-2 right-10 text-2xl animate-bounce delay-400">
+                    🎊
+                  </div>
+
+                  {/* Content */}
+                  <div className="relative z-10 flex flex-col items-center justify-center space-y-3">
+                    {/* Trophy with glow effect */}
+                    <div className="relative">
+                      <div className="absolute inset-0 rounded-full bg-yellow-400 blur-md transform scale-110 opacity-70"></div>
+                      <span className="relative text-6xl drop-shadow-lg animate-pulse-slow">
+                        🏆
+                      </span>
+                    </div>
+
+                    {/* Champion name with ribbon effect */}
+                    <div className="relative mt-2 mb-1">
+                      <h2 className="text-white text-2xl font-bold tracking-wide">
+                        {match.winner.name}
+                      </h2>
+                      <div className="absolute -bottom-1 left-1/2 transform -translate-x-1/2 w-3/4 h-1 bg-gradient-to-r from-transparent via-yellow-400 to-transparent"></div>
+                    </div>
+
+                    {/* Championship banner */}
+                    <div className="bg-gradient-to-r from-yellow-400 to-yellow-500 text-white px-6 py-1.5 rounded-full font-bold tracking-wider uppercase text-sm shadow-lg">
+                      Tournament Champion
+                    </div>
+
+                    {/* Final score display */}
+                    <div className="mt-2 text-white text-sm">
+                      Final Score: {match.score.team1Score} -{" "}
+                      {match.score.team2Score}
+                    </div>
+
+                    {/* Runner-up mention */}
+                    {match.loser && (
+                      <div className="text-gray-200 text-sm mt-1">
+                        Runner-up: {match.loser.name}
                       </div>
                     )}
+                  </div>
                 </motion.div>
               )
             ) : (

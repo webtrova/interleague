@@ -25,6 +25,15 @@ function TournamentPageContent() {
     return createInitialRounds(mlbTeams.teams);
   });
 
+  // Defensive guard: render error if tournament is ever undefined
+  if (!tournament) {
+    return (
+      <div className="p-8 text-red-600">
+        Tournament data is unavailable. Please refresh or reset the tournament.
+      </div>
+    );
+  }
+
   const handleMatchUpdate = useCallback((updatedMatch: Match) => {
     setTournament((currentTournament: Tournament) => {
       // First, update the match with proper winner/loser logic
@@ -70,6 +79,31 @@ function TournamentPageContent() {
     leagueTeams.forEach((team) => (team.losses = 0));
     setTournament(createInitialRounds(leagueTeams));
   }, [selectedLeague]);
+
+  // Reset current round handler
+  const handleResetCurrentRound = useCallback(() => {
+    setTournament((currentTournament: Tournament) => {
+      const currentRoundIdx = currentTournament.currentRound - 1;
+      if (currentRoundIdx < 0 || currentRoundIdx >= currentTournament.rounds.length) return currentTournament;
+      const updatedRounds = currentTournament.rounds.map((round, idx) => {
+        if (idx !== currentRoundIdx) return round;
+        return {
+          ...round,
+          matches: round.matches.map(match => ({
+            ...match,
+            score: { team1Score: 0, team2Score: 0 },
+            isCompleted: false,
+            winner: undefined,
+            loser: undefined
+          }))
+        };
+      });
+      return {
+        ...currentTournament,
+        rounds: updatedRounds
+      };
+    });
+  }, []);
 
   return (
     <div className="min-h-screen bg-gray-50 py-8">
@@ -164,6 +198,7 @@ function TournamentPageContent() {
           tournament={tournament}
           onMatchUpdate={handleMatchUpdate}
           selectedLeague={selectedLeague}
+          onResetCurrentRound={handleResetCurrentRound}
         />
 
         {/* Tournament Stats */}
@@ -175,18 +210,18 @@ function TournamentPageContent() {
                 ? mlbTeams.teams.length
                 : selectedLeague === League.NFL
                 ? nflTeams.teams.length
-                : nbaTeams.teams.length) - tournament.eliminatedTeams.length}
+                : nbaTeams.teams.length) - (tournament?.eliminatedTeams?.length ?? 0)}
             </p>
           </div>
           <div className="bg-red-50 p-4 rounded-lg overflow-auto max-h-40">
             <h3 className="font-semibold text-red-900 mb-2">
               Eliminated Teams
             </h3>
-            {tournament.eliminatedTeams.length === 0 ? (
+            {(tournament?.eliminatedTeams?.length ?? 0) === 0 ? (
               <p className="text-red-600">No teams eliminated yet.</p>
             ) : (
               <ul className="list-disc list-inside text-red-600">
-                {tournament.eliminatedTeams.map((team) => (
+                {tournament?.eliminatedTeams?.map((team) => (
                   <li key={team.id}>{team.name}</li>
                 ))}
               </ul>
@@ -228,4 +263,4 @@ export default function TournamentPage() {
       <TournamentPageContent />
     </SplashAuthGuard>
   );
-}
+} 

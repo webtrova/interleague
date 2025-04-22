@@ -14,15 +14,21 @@ interface TournamentBracketProps {
   tournament: Tournament;
   onMatchUpdate?: (match: Match) => void;
   selectedLeague: League;
+  onResetCurrentRound?: () => void;
 }
 
 export const TournamentBracket = ({
   tournament,
   onMatchUpdate,
-  selectedLeague
+  selectedLeague,
+  onResetCurrentRound
 }: TournamentBracketProps) => {
   const [selectedRound, setSelectedRound] = useState(tournament.currentRound);
   const [followCurrentRound, setFollowCurrentRound] = useState(true);
+
+  useEffect(() => {
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }, [selectedRound]);
 
   useEffect(() => {
     // Only auto-advance if following the current round
@@ -71,8 +77,16 @@ export const TournamentBracket = ({
   // Get all rounds with their matches
   const rounds = useMemo(() => {
     return tournament.rounds.map((round) => {
-      const winners = round.matches.filter((m) => m.bracket === "winners");
-      const losers = round.matches.filter((m) => m.bracket === "losers");
+      const winners = round.matches.filter((m) => m.bracket === "winners").sort((a, b) => {
+        if (a.team2 === null && b.team2 !== null) return -1;
+        if (a.team2 !== null && b.team2 === null) return 1;
+        return 0;
+      });
+      const losers = round.matches.filter((m) => m.bracket === "losers").sort((a, b) => {
+        if (a.team2 === null && b.team2 !== null) return -1;
+        if (a.team2 !== null && b.team2 === null) return 1;
+        return 0;
+      });
       const championship = round.matches.filter(
         (m) => m.bracket === "championship"
       );
@@ -93,8 +107,72 @@ export const TournamentBracket = ({
     setFollowCurrentRound(roundNumber === tournament.currentRound);
   };
 
-  return (
+  // Helper: Assign table numbers for winners, losers, and championship in a round
+const getRoundTableNumbers = (winners: any[], losers: any[], championship: any[]) => {
+  const tableNumbers: Record<string, number | null> = {};
+  const maxTables = 16;
+  let tableCounter = 1;
+
+  // Helper to check if both teams are present (not TBD)
+  const isPlayable = (match: any) => match.team1 && match.team2 && match.team1.name !== 'TBD' && match.team2.name !== 'TBD';
+
+  // Winners bracket tables
+  winners.forEach((match) => {
+    if (isPlayable(match) && tableCounter <= maxTables) {
+      tableNumbers[match.id] = tableCounter++;
+    } else {
+      tableNumbers[match.id] = null;
+    }
+  });
+  // Losers bracket tables
+  losers.forEach((match) => {
+    if (isPlayable(match) && tableCounter <= maxTables) {
+      tableNumbers[match.id] = tableCounter++;
+    } else {
+      tableNumbers[match.id] = null;
+    }
+  });
+  // Championship
+  championship.forEach((match) => {
+    if (isPlayable(match) && tableCounter <= maxTables) {
+      tableNumbers[match.id] = tableCounter++;
+    } else {
+      tableNumbers[match.id] = null;
+    }
+  });
+  return tableNumbers;
+};
+
+return (
     <div className="w-full">
+      {/* Reset Tournament & Reset Current Round Buttons */}
+      <div className="flex justify-end mb-4 gap-2">
+        <button
+          className="px-4 py-2 border border-red-500 text-red-500 rounded hover:bg-red-50 transition-colors font-semibold"
+          onClick={() => {
+            if (typeof (window as any).onResetRound === 'function') {
+              (window as any).onResetRound();
+            } else {
+              window.location.reload();
+            }
+          }}
+        >
+          Reset Tournament
+        </button>
+        <button
+          className="px-4 py-2 border border-blue-500 text-blue-500 rounded hover:bg-blue-50 transition-colors font-semibold"
+          onClick={() => {
+            if (onResetCurrentRound) {
+              onResetCurrentRound();
+            }
+          }}
+        >
+          Reset Current Round
+        </button>
+      </div>
+
+      {/* Scroll to top after round/tab change */}
+      
       {/* Round Tabs */}
       <div className="mb-8 border-b">
         <div className="flex overflow-x-auto">
@@ -142,14 +220,20 @@ export const TournamentBracket = ({
                     </h3>
                     <div className="flex justify-center">
                       <div className="w-[400px]">
-                        <MatchCard
-                          key={round.championship[0].id}
-                          match={round.championship[0]}
-                          tournament={tournament}
-                          onScoreUpdate={handleScoreUpdate}
-                          isEditable={!round.championship[0].isCompleted}
-                          selectedLeague={selectedLeague}
-                        />
+                        {(() => {
+  const tableNumbers = getRoundTableNumbers(round.winners, round.losers, round.championship);
+  return round.championship.map((match) => (
+    <MatchCard
+      key={match.id}
+      match={match}
+      tournament={tournament}
+      tableNumber={tableNumbers[match.id]}
+      onScoreUpdate={handleScoreUpdate}
+      isEditable={!match.isCompleted}
+      selectedLeague={selectedLeague}
+    />
+  ));
+})()}
                       </div>
                     </div>
                   </div>
@@ -165,16 +249,20 @@ export const TournamentBracket = ({
                       </span>
                     </h3>
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                      {round.winners.map((match) => (
-                        <MatchCard
-                          key={match.id}
-                          match={match}
-                          tournament={tournament}
-                          onScoreUpdate={handleScoreUpdate}
-                          isEditable={!match.isCompleted}
-                          selectedLeague={selectedLeague}
-                        />
-                      ))}
+                      {(() => {
+  const tableNumbers = getRoundTableNumbers(round.winners, round.losers, round.championship);
+  return round.winners.map((match) => (
+    <MatchCard
+      key={match.id}
+      match={match}
+      tournament={tournament}
+      tableNumber={tableNumbers[match.id]}
+      onScoreUpdate={handleScoreUpdate}
+      isEditable={!match.isCompleted}
+      selectedLeague={selectedLeague}
+    />
+  ));
+})()}
                     </div>
                   </div>
                 )}
@@ -189,16 +277,20 @@ export const TournamentBracket = ({
                       </span>
                     </h3>
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                      {round.losers.map((match) => (
-                        <MatchCard
-                          key={match.id}
-                          match={match}
-                          tournament={tournament}
-                          onScoreUpdate={handleScoreUpdate}
-                          isEditable={!match.isCompleted}
-                          selectedLeague={selectedLeague}
-                        />
-                      ))}
+                      {(() => {
+  const tableNumbers = getRoundTableNumbers(round.winners, round.losers, round.championship);
+  return round.losers.map((match) => (
+    <MatchCard
+      key={match.id}
+      match={match}
+      tournament={tournament}
+      tableNumber={tableNumbers[match.id]}
+      onScoreUpdate={handleScoreUpdate}
+      isEditable={!match.isCompleted}
+      selectedLeague={selectedLeague}
+    />
+  ));
+})()}
                     </div>
                   </div>
                 )}
