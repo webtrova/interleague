@@ -31,6 +31,7 @@ export interface Tournament {
   championshipMatchesPlayed: number;
   winner?: Team;
   winnersBracketFinalLoser?: Team; // tracks the winner's bracket final loser for championship rematch logic
+  losersBracketFinalLoser?: Team; // tracks the loser's bracket final loser (LLWB)
 }
 
 export const createMatch = (
@@ -190,7 +191,7 @@ export const advanceToNextRound = (tournament: Tournament): Tournament => {
     });
   });
 
-  // Gather all teams ever in the tournament, attaching wins
+  // Gather all teams
   const allTeams: Team[] = [];
   const teamIds = new Set<string>();
   for (const round of tournament.rounds) {
@@ -225,33 +226,43 @@ export const advanceToNextRound = (tournament: Tournament): Tournament => {
     }
   }
 
-  // Winners: teams with 0 losses and not eliminated
-  const winnersBracketTeams = allTeams
-    .filter(
+  // Variables for tracking bracket state
+  const winnersBracketTeams = dedupeTeams(
+    allTeams.filter(
       (team) =>
         (lossCounts[team.id] || 0) === 0 &&
         !tournament.eliminatedTeams.some((t) => t.id === team.id) &&
         !newlyEliminated.some((t) => t.id === team.id)
     )
-    .map((team) => ({
-      ...team,
-      losses: lossCounts[team.id] || 0,
-      wins: winsCounts[team.id] || 0
-    }));
+  );
 
-  // Losers: teams with 1 loss and not eliminated
-  const losersBracketTeams = allTeams
-    .filter(
+  const losersBracketTeams = dedupeTeams(
+    allTeams.filter(
       (team) =>
         (lossCounts[team.id] || 0) === 1 &&
         !tournament.eliminatedTeams.some((t) => t.id === team.id) &&
         !newlyEliminated.some((t) => t.id === team.id)
     )
-    .map((team) => ({
-      ...team,
-      losses: lossCounts[team.id] || 0,
-      wins: winsCounts[team.id] || 0
-    }));
+  );
+
+  // Enrich teams with win/loss counts
+  winnersBracketTeams.forEach(
+    (team) =>
+      (team = {
+        ...team,
+        losses: lossCounts[team.id] || 0,
+        wins: winsCounts[team.id] || 0
+      })
+  );
+
+  losersBracketTeams.forEach(
+    (team) =>
+      (team = {
+        ...team,
+        losses: lossCounts[team.id] || 0,
+        wins: winsCounts[team.id] || 0
+      })
+  );
 
   let isChampionshipRound = false;
   let championshipMatches: Match[] = [];
@@ -433,7 +444,7 @@ export const advanceToNextRound = (tournament: Tournament): Tournament => {
               nextRoundNumber,
               tournament.winnersBracketFinalLoser,
               null,
-              true,
+              false, // Not a bye, just waiting
               "losers"
             )
           );
@@ -457,191 +468,705 @@ export const advanceToNextRound = (tournament: Tournament): Tournament => {
     );
     wwbCardAdded = true;
 
-    // Continue with losers bracket matches separately
+    // Continue with losers bracket matches
     createLosersBracketMatches();
   }
-  // Otherwise, continue with normal bracket play
+  // Standard case: create matches for both brackets
   else {
     createStandardBracketMatches();
+    createLosersBracketMatches();
   }
 
   // Helper function to create standard bracket matches
   function createStandardBracketMatches() {
-    // --- Winners Bracket Matches ---
-    let matchCounter = 1;
-    for (let i = 0; i < winnersBracketTeams.length; i += 2) {
-      const team1 = winnersBracketTeams[i];
-      const team2 = winnersBracketTeams[i + 1] ?? null;
-      const isBye = !team2;
+    if (winnersBracketTeams.length === 0) return;
+
+    // If we have exactly one team in winners bracket, create a placeholder
+    if (winnersBracketTeams.length === 1 && !wwbCardAdded) {
       nextRoundMatches.push(
         createMatch(
-          `W${nextRoundNumber}-${matchCounter}`,
+          `W${nextRoundNumber}-1`,
           nextRoundNumber,
-          team1,
-          team2,
-          isBye,
+          winnersBracketTeams[0],
+          null,
+          true,
           "winners"
         )
       );
       wwbCardAdded = true;
-      matchCounter++;
+      return;
     }
 
-    // Create losers bracket matches separately
-    createLosersBracketMatches();
+    // Create matches for winners bracket
+    for (let i = 0; i < winnersBracketTeams.length; i += 2) {
+      if (i + 1 < winnersBracketTeams.length) {
+        nextRoundMatches.push(
+          createMatch(
+            `W${nextRoundNumber}-${Math.floor(i / 2) + 1}`,
+            nextRoundNumber,
+            winnersBracketTeams[i],
+            winnersBracketTeams[i + 1],
+            false,
+            "winners"
+          )
+        );
+      } else if (winnersBracketTeams.length % 2 !== 0) {
+        // Handle odd number with a bye
+        nextRoundMatches.push(
+          createMatch(
+            `W${nextRoundNumber}-${Math.floor(i / 2) + 1}`,
+            nextRoundNumber,
+            winnersBracketTeams[i],
+            null,
+            true,
+            "winners"
+          )
+        );
+      }
+    }
   }
 
-  // Helper function to create losers bracket matches
+  // Helper function to create losers bracket matches based on the specific pattern in the image
+  // Update the createLosersBracketMatches function within the advanceToNextRound function
+
+  // This code includes fixes to the losers bracket logic, particularly for Round 6 and beyond
+
+  // This code includes fixes to the losers bracket logic, particularly for Round 6 and beyond
+
   function createLosersBracketMatches() {
-    // --- Losers Bracket Matches ---
-    const eligibleLosers = allTeams.filter(
-      (team) =>
-        (lossCounts[team.id] || 0) === 1 &&
-        !tournament.eliminatedTeams.some((t) => t.id === team.id) &&
-        !newlyEliminated.some((t) => t.id === team.id) &&
-        // Exclude winner's bracket final loser if it exists but hasn't played yet in losers
-        !(
-          tournament.winnersBracketFinalLoser &&
-          tournament.winnersBracketFinalLoser.id === team.id
-        )
-    );
-
-    // Find teams recently dropped from winners bracket
-    const justDroppedFromWinners = currentRound.matches
-      .filter((m) => m.bracket === "winners" && m.loser && m.isCompleted)
-      .map((m) => m.loser!)
-      .filter((loser) => eligibleLosers.some((t) => t.id === loser.id));
-
-    // If this is the winner's bracket final, store the loser for later use
-    if (
-      currentRound.matches.some(
-        (m) =>
-          m.bracket === "winners" &&
-          winnersBracketTeams.length === 1 &&
-          m.loser &&
-          m.isCompleted
-      )
-    ) {
-      // This is a special case - we found the winner's bracket final loser
-      const winnersFinalLoser = currentRound.matches
+    // For Round 2 (first losers bracket round)
+    if (nextRoundNumber === 2) {
+      // Get all losers from winners bracket round 1
+      const losersFromWinners = tournament.rounds
+        .filter((r) => r.roundNumber === 1)
+        .flatMap((r) => r.matches)
         .filter((m) => m.bracket === "winners" && m.isCompleted && m.loser)
-        .map((m) => m.loser!)
-        .pop();
+        .map((m) => ({
+          team: m.loser!,
+          matchId: m.id,
+          matchIndex: parseInt(m.id.split("-")[1])
+        }));
 
-      if (winnersFinalLoser) {
-        tournament.winnersBracketFinalLoser = winnersFinalLoser;
+      // Sort by match index to maintain original bracket order
+      losersFromWinners.sort((a, b) => a.matchIndex - b.matchIndex);
 
-        // Always add a placeholder for the loser of winner's bracket final in round 7
-        // This ensures the LWB card is shown
-        if (nextRoundNumber === 7 && !lwbCardAdded) {
+      // Create matches for losers bracket round 2
+      // Following the pattern shown in the image: 1 vs 2, 3 vs 4, etc.
+      for (let i = 0; i < losersFromWinners.length; i += 2) {
+        if (i + 1 < losersFromWinners.length) {
           nextRoundMatches.push(
             createMatch(
-              `LWB${nextRoundNumber}-1`,
+              `L${nextRoundNumber}-${i / 2 + 1}`,
               nextRoundNumber,
-              winnersFinalLoser,
+              losersFromWinners[i].team,
+              losersFromWinners[i + 1].team,
+              false,
+              "losers"
+            )
+          );
+        }
+      }
+    }
+    // For Round 3 (second losers bracket round) - FIXED PATTERN
+    else if (nextRoundNumber === 3) {
+      // Get winners from losers bracket round 2
+      const losersR2Winners = currentRound.matches
+        .filter((m) => m.bracket === "losers" && m.isCompleted && m.winner)
+        .map((m) => ({
+          team: m.winner!,
+          matchId: m.id,
+          matchIndex: parseInt(m.id.split("-")[1])
+        }));
+
+      // Get losers from winners bracket round 2
+      const winnersR2Losers = currentRound.matches
+        .filter((m) => m.bracket === "winners" && m.isCompleted && m.loser)
+        .map((m) => ({
+          team: m.loser!,
+          matchId: m.id,
+          matchIndex: parseInt(m.id.split("-")[1])
+        }));
+
+      // Sort both arrays by match index
+      losersR2Winners.sort((a, b) => a.matchIndex - b.matchIndex);
+      winnersR2Losers.sort((a, b) => a.matchIndex - b.matchIndex);
+
+      // Following the pattern in the image:
+      // Last half of losers from WB play first half of winners from LB
+      // First half of losers from WB play last half of winners from LB
+      const halfPoint = Math.floor(winnersR2Losers.length / 2);
+
+      // Create first half of matches (bottom WB losers vs top LB winners)
+      for (let i = 0; i < halfPoint; i++) {
+        nextRoundMatches.push(
+          createMatch(
+            `L${nextRoundNumber}-${i + 1}`, // start from 1 since we used index 1 above
+            nextRoundNumber,
+            losersR2Winners[i].team,
+            winnersR2Losers[winnersR2Losers.length - halfPoint + i].team,
+            false,
+            "losers"
+          )
+        );
+      }
+
+      // Create second half of matches (top WB losers vs bottom LB winners)
+      for (let i = 0; i < halfPoint; i++) {
+        nextRoundMatches.push(
+          createMatch(
+            `L${nextRoundNumber}-${halfPoint + i + 1}`,
+            nextRoundNumber,
+            losersR2Winners[halfPoint + i].team,
+            winnersR2Losers[i].team,
+            false,
+            "losers"
+          )
+        );
+      }
+    }
+    // For Round 4 (third losers bracket round) - UPDATED ACCORDING TO IMAGE
+    else if (nextRoundNumber === 4) {
+      // Get winners from losers bracket round 3
+      const losersR3Winners = currentRound.matches
+        .filter((m) => m.bracket === "losers" && m.isCompleted && m.winner)
+        .map((m) => ({
+          team: m.winner!,
+          matchId: m.id,
+          matchIndex: parseInt(m.id.split("-")[1])
+        }));
+
+      // Get losers from winners bracket round 3
+      const winnersR3Losers = currentRound.matches
+        .filter((m) => m.bracket === "winners" && m.isCompleted && m.loser)
+        .map((m) => ({
+          team: m.loser!,
+          matchId: m.id,
+          matchIndex: parseInt(m.id.split("-")[1])
+        }));
+
+      // Sort by match index
+      losersR3Winners.sort((a, b) => a.matchIndex - b.matchIndex);
+      winnersR3Losers.sort((a, b) => a.matchIndex - b.matchIndex);
+
+      let matchCounter = 1;
+
+      // Based on the image pattern for round 4:
+      // 1. First, create matches between the winners bracket losers at top of bracket
+      if (winnersR3Losers.length >= 2) {
+        nextRoundMatches.push(
+          createMatch(
+            `L${nextRoundNumber}-${matchCounter}`,
+            nextRoundNumber,
+            winnersR3Losers[0].team,
+            winnersR3Losers[1].team,
+            false,
+            "losers"
+          )
+        );
+        matchCounter++;
+      }
+
+      // 2. FIXED: Match consecutive winners from losers bracket
+      // Group winners by consecutive pairs (not by halves)
+      for (let i = 0; i < losersR3Winners.length; i += 2) {
+        if (i + 1 < losersR3Winners.length) {
+          nextRoundMatches.push(
+            createMatch(
+              `L${nextRoundNumber}-${matchCounter}`,
+              nextRoundNumber,
+              losersR3Winners[i].team,
+              losersR3Winners[i + 1].team,
+              false,
+              "losers"
+            )
+          );
+          matchCounter++;
+        } else if (losersR3Winners.length % 2 !== 0) {
+          // Handle odd number with a bye
+          nextRoundMatches.push(
+            createMatch(
+              `L${nextRoundNumber}-${matchCounter}`,
+              nextRoundNumber,
+              losersR3Winners[i].team,
               null,
               true,
               "losers"
             )
           );
-          lwbCardAdded = true;
+          matchCounter++;
         }
       }
-    }
 
-    // Existing losers bracket teams
-    const existingLosers = eligibleLosers.filter(
-      (t) => !justDroppedFromWinners.some((jd) => jd.id === t.id)
-    );
-
-    // Order: most recent drop(s) first
-    const orderedLosers = [...justDroppedFromWinners, ...existingLosers];
-
-    if (orderedLosers.length > 0) {
-      if (orderedLosers.length % 2 === 1) {
-        // Odd: bye goes to the most recent team dropped from winners bracket
-        let teamWithBye: Team | null = null;
-        if (justDroppedFromWinners.length > 0) {
-          teamWithBye =
-            justDroppedFromWinners[justDroppedFromWinners.length - 1];
-          // Remove the bye team from orderedLosers
-          const byeIndex = orderedLosers.findIndex(
-            (t) => t.id === teamWithBye!.id
-          );
-          if (byeIndex !== -1) orderedLosers.splice(byeIndex, 1);
-        } else {
-          // Defensive: fallback to first team if no recent drop
-          teamWithBye = orderedLosers.shift()!;
-        }
+      // 3. Finally, create matches between the winners bracket losers at bottom of bracket
+      if (winnersR3Losers.length >= 4) {
         nextRoundMatches.push(
           createMatch(
-            `L${nextRoundNumber}-1`,
+            `L${nextRoundNumber}-${matchCounter}`,
             nextRoundNumber,
-            teamWithBye,
-            null,
-            true,
+            winnersR3Losers[2].team,
+            winnersR3Losers[3].team,
+            false,
             "losers"
           )
         );
-        // Pair the rest
-        for (let i = 0; i < orderedLosers.length; i += 2) {
-          const team1 = orderedLosers[i];
-          const team2 = orderedLosers[i + 1] ?? null;
+        matchCounter++;
+      }
+    }
+    // For Round 5 (fourth losers bracket round) - UPDATED ACCORDING TO IMAGE
+    else if (nextRoundNumber === 5) {
+      // Get winners from losers bracket round 4
+      const losersR4Winners = currentRound.matches
+        .filter((m) => m.bracket === "losers" && m.isCompleted && m.winner)
+        .map((m) => ({
+          team: m.winner!,
+          matchId: m.id,
+          matchIndex: parseInt(m.id.split("-")[1])
+        }));
+
+      // Get losers from winners bracket round 4
+      const winnersR4Losers = currentRound.matches
+        .filter((m) => m.bracket === "winners" && m.isCompleted && m.loser)
+        .map((m) => ({
+          team: m.loser!,
+          matchId: m.id,
+          matchIndex: parseInt(m.id.split("-")[1])
+        }));
+
+      // Sort by match index
+      losersR4Winners.sort((a, b) => a.matchIndex - b.matchIndex);
+      winnersR4Losers.sort((a, b) => a.matchIndex - b.matchIndex);
+
+      let matchCounter = 1;
+
+      // Based on the image pattern for round 5:
+      // 1. First, match consecutive winners from losers bracket
+      // Group winners by their original bracket position (odd vs even)
+      const evenIndexWinners = losersR4Winners.filter(
+        (w) => w.matchIndex % 2 === 0
+      );
+      const oddIndexWinners = losersR4Winners.filter(
+        (w) => w.matchIndex % 2 !== 0
+      );
+
+      // Sort each group by match index to maintain order
+      evenIndexWinners.sort((a, b) => a.matchIndex - b.matchIndex);
+      oddIndexWinners.sort((a, b) => a.matchIndex - b.matchIndex);
+
+      // Match consecutive winners (e.g., winners of matches 1&2, 3&4, 5&6, etc.)
+      for (
+        let i = 0;
+        i < Math.min(evenIndexWinners.length, oddIndexWinners.length);
+        i++
+      ) {
+        nextRoundMatches.push(
+          createMatch(
+            `L${nextRoundNumber}-${matchCounter}`,
+            nextRoundNumber,
+            evenIndexWinners[i].team,
+            oddIndexWinners[i].team,
+            false,
+            "losers"
+          )
+        );
+        matchCounter++;
+      }
+
+      // Handle any remaining winners (in case of odd number)
+      const remainingWinners = [
+        ...evenIndexWinners.slice(oddIndexWinners.length),
+        ...oddIndexWinners.slice(evenIndexWinners.length)
+      ];
+      for (let i = 0; i < remainingWinners.length; i += 2) {
+        if (i + 1 < remainingWinners.length) {
           nextRoundMatches.push(
             createMatch(
-              `L${nextRoundNumber}-${Math.floor(i / 2) + 2}`,
+              `L${nextRoundNumber}-${matchCounter}`,
               nextRoundNumber,
-              team1,
-              team2,
-              !team2,
+              remainingWinners[i].team,
+              remainingWinners[i + 1].team,
+              false,
               "losers"
             )
           );
+          matchCounter++;
+        } else {
+          // Handle odd number case with a bye
+          nextRoundMatches.push(
+            createMatch(
+              `L${nextRoundNumber}-${matchCounter}`,
+              nextRoundNumber,
+              remainingWinners[i].team,
+              null,
+              true,
+              "losers"
+            )
+          );
+          matchCounter++;
         }
-      } else {
-        // Even number: pair all
-        for (let i = 0; i < orderedLosers.length; i += 2) {
-          const team1 = orderedLosers[i];
-          const team2 = orderedLosers[i + 1] ?? null;
+      }
+
+      // Based on the image pattern:
+      // Winners bracket losers face each other at the BOTTOM of the bracket (not the top)
+      if (winnersR4Losers.length >= 2) {
+        nextRoundMatches.push(
+          createMatch(
+            `L${nextRoundNumber}-${matchCounter}`,
+            nextRoundNumber,
+            winnersR4Losers[0].team,
+            winnersR4Losers[1].team,
+            false,
+            "losers"
+          )
+        );
+        matchCounter++;
+      }
+    }
+    // For Round 6 (fifth losers bracket round)
+    else if (nextRoundNumber === 6) {
+      // Get winners from losers bracket round 5
+      const losersR5Winners = currentRound.matches
+        .filter((m) => m.bracket === "losers" && m.isCompleted && m.winner)
+        .map((m) => ({
+          team: m.winner!,
+          matchId: m.id,
+          matchIndex: parseInt(m.id.split("-")[1])
+        }));
+
+      // Get losers from losers bracket round 5 (to track LLWB)
+      const losersR5Losers = currentRound.matches
+        .filter((m) => m.bracket === "losers" && m.isCompleted && m.loser)
+        .map((m) => ({
+          team: m.loser!,
+          matchId: m.id,
+          matchIndex: parseInt(m.id.split("-")[1])
+        }));
+
+      // Sort by match index
+      losersR5Winners.sort((a, b) => a.matchIndex - b.matchIndex);
+      losersR5Losers.sort((a, b) => a.matchIndex - b.matchIndex);
+
+      // Check if we have the winner's bracket final loser
+      const hasWinnersBracketFinalLoser = !!tournament.winnersBracketFinalLoser;
+
+      // Set the LLWB (Loser of Loser's Winner Bracket) if available
+      if (losersR5Losers.length > 0) {
+        tournament.losersBracketFinalLoser = losersR5Losers[0].team;
+      }
+
+      // In round 6, we pair winners sequentially as shown in the image
+      for (let i = 0; i < losersR5Winners.length; i += 2) {
+        if (i + 1 < losersR5Winners.length) {
           nextRoundMatches.push(
             createMatch(
               `L${nextRoundNumber}-${Math.floor(i / 2) + 1}`,
               nextRoundNumber,
-              team1,
-              team2,
-              !team2,
+              losersR5Winners[i].team,
+              losersR5Winners[i + 1].team,
+              false,
+              "losers"
+            )
+          );
+        } else if (losersR5Winners.length % 2 !== 0) {
+          // Handle odd number with a bye
+          nextRoundMatches.push(
+            createMatch(
+              `L${nextRoundNumber}-${Math.floor(i / 2) + 1}`,
+              nextRoundNumber,
+              losersR5Winners[i].team,
+              null,
+              true,
+              "losers"
+            )
+          );
+        }
+      }
+
+      // Add the LWB card if we have a winner's bracket final loser
+      if (hasWinnersBracketFinalLoser && tournament.winnersBracketFinalLoser) {
+        nextRoundMatches.push(
+          createMatch(
+            `LWB${nextRoundNumber}-1`,
+            nextRoundNumber,
+            tournament.winnersBracketFinalLoser,
+            null,
+            true, // Mark as a bye so it doesn't wait for input
+            "losers"
+          )
+        );
+      }
+
+      // Add the LLWB card if we have a loser's bracket final loser
+      if (tournament.losersBracketFinalLoser) {
+        nextRoundMatches.push(
+          createMatch(
+            `LLWB${nextRoundNumber}-1`,
+            nextRoundNumber,
+            tournament.losersBracketFinalLoser,
+            null,
+            true, // Mark as a bye so it doesn't wait for input
+            "losers"
+          )
+        );
+      }
+    }
+    // For Round 7 (sixth losers bracket round) - Losers Bracket Final
+    else if (nextRoundNumber === 7) {
+      // Get winners from losers bracket round 6
+      const losersR6Winners = currentRound.matches
+        .filter((m) => m.bracket === "losers" && m.isCompleted && m.winner)
+        .map((m) => ({
+          team: m.winner!,
+          matchId: m.id,
+          matchIndex: parseInt(m.id.split("-")[1])
+        }));
+
+      // Get losers from losers bracket round 6 (to update LLWB)
+      const losersR6Losers = currentRound.matches
+        .filter((m) => m.bracket === "losers" && m.isCompleted && m.loser)
+        .map((m) => ({
+          team: m.loser!,
+          matchId: m.id,
+          matchIndex: parseInt(m.id.split("-")[1])
+        }));
+
+      // Sort by match index
+      losersR6Winners.sort((a, b) => a.matchIndex - b.matchIndex);
+      losersR6Losers.sort((a, b) => a.matchIndex - b.matchIndex);
+
+      // Update the LLWB (Loser of Loser's Winner Bracket) if available
+      if (losersR6Losers.length > 0) {
+        tournament.losersBracketFinalLoser = losersR6Losers[0].team;
+      }
+
+      // Check if we have the winner's bracket final loser
+      const hasWinnersBracketFinalLoser = !!tournament.winnersBracketFinalLoser;
+      
+      // Check if the LWB card already exists in the current round
+      const lwbCardExists = currentRound.matches.some(m => 
+        m.team1 && 
+        tournament.winnersBracketFinalLoser && 
+        m.team1.id === tournament.winnersBracketFinalLoser.id
+      );
+
+      // Check if the LLWB card already exists in the current round
+      const llwbCardExists = currentRound.matches.some(m => 
+        m.team1 && 
+        tournament.losersBracketFinalLoser && 
+        m.team1.id === tournament.losersBracketFinalLoser.id
+      );
+
+      // In round 7, we have the losers bracket final
+      // If we have both the LWB and a winner from the losers bracket, match them
+      if (losersR6Winners.length > 0 && hasWinnersBracketFinalLoser && tournament.winnersBracketFinalLoser) {
+        nextRoundMatches.push(
+          createMatch(
+            `L${nextRoundNumber}-1`,
+            nextRoundNumber,
+            tournament.winnersBracketFinalLoser,
+            losersR6Winners[0].team,
+            false,
+            "losers"
+          )
+        );
+      } 
+      // If we have the LWB but no winner from losers bracket yet, show the waiting card
+      else if (hasWinnersBracketFinalLoser && tournament.winnersBracketFinalLoser && !lwbCardExists) {
+        nextRoundMatches.push(
+          createMatch(
+            `LWB${nextRoundNumber}-1`,
+            nextRoundNumber,
+            tournament.winnersBracketFinalLoser,
+            null,
+            true, // Mark as a bye so it doesn't wait for input
+            "losers"
+          )
+        );
+      }
+      // Otherwise, just pair the losers bracket winners if we have enough
+      else if (losersR6Winners.length >= 2) {
+        nextRoundMatches.push(
+          createMatch(
+            `L${nextRoundNumber}-1`,
+            nextRoundNumber,
+            losersR6Winners[0].team,
+            losersR6Winners[1].team,
+            false,
+            "losers"
+          )
+        );
+      }
+
+      // Always add the LLWB card in round 7 if we have a loser's bracket final loser
+      if (tournament.losersBracketFinalLoser && !llwbCardExists) {
+        nextRoundMatches.push(
+          createMatch(
+            `LLWB${nextRoundNumber}-1`,
+            nextRoundNumber,
+            tournament.losersBracketFinalLoser,
+            null,
+            true, // Mark as a bye so it doesn't wait for input
+            "losers"
+          )
+        );
+      }
+    }
+    // For Round 8 (seventh losers bracket round) - Final Qualifier
+    else if (nextRoundNumber === 8) {
+      // Get winners from losers bracket round 7 (LWLB - Last Winner of Loser's Bracket)
+      const losersR7Winners = currentRound.matches
+        .filter((m) => m.bracket === "losers" && m.isCompleted && m.winner)
+        .map((m) => ({
+          team: m.winner!,
+          matchId: m.id,
+          matchIndex: parseInt(m.id.split("-")[1])
+        }));
+
+      // Sort by match index
+      losersR7Winners.sort((a, b) => a.matchIndex - b.matchIndex);
+
+      // In round 8, LLWB (Loser of Loser's Winner Bracket) faces LWLB (Last Winner of Loser's Bracket)
+      // for a chance at the championship
+      if (losersR7Winners.length > 0 && tournament.losersBracketFinalLoser) {
+        // Match LLWB vs LWLB
+        nextRoundMatches.push(
+          createMatch(
+            `L${nextRoundNumber}-1`,
+            nextRoundNumber,
+            tournament.losersBracketFinalLoser,
+            losersR7Winners[0].team,
+            false,
+            "losers"
+          )
+        );
+      } 
+      // If we have LLWB but no LWLB yet, show the waiting card
+      else if (tournament.losersBracketFinalLoser) {
+        nextRoundMatches.push(
+          createMatch(
+            `LLWB${nextRoundNumber}-1`,
+            nextRoundNumber,
+            tournament.losersBracketFinalLoser,
+            null,
+            true, // Mark as a bye so it doesn't wait for input
+            "losers"
+          )
+        );
+      }
+      // If we have LWLB but no LLWB, show the waiting card
+      else if (losersR7Winners.length > 0) {
+        nextRoundMatches.push(
+          createMatch(
+            `LWLB${nextRoundNumber}-1`,
+            nextRoundNumber,
+            losersR7Winners[0].team,
+            null,
+            true, // Mark as a bye so it doesn't wait for input
+            "losers"
+          )
+        );
+      }
+    }
+    // For later rounds - generalized pattern
+    else {
+      // Get all eligible teams for losers bracket
+      const eligibleLosers = allTeams.filter(
+        (team) =>
+          (lossCounts[team.id] || 0) === 1 &&
+          !tournament.eliminatedTeams.some((t) => t.id === team.id) &&
+          !newlyEliminated.some((t) => t.id === team.id)
+      );
+
+      // Find teams recently dropped from winners bracket
+      const justDroppedFromWinners = currentRound.matches
+        .filter((m) => m.bracket === "winners" && m.loser && m.isCompleted)
+        .map((m) => ({
+          team: m.loser!,
+          matchId: m.id,
+          matchIndex: parseInt(m.id.split("-")[1])
+        }))
+        .filter((loser) => eligibleLosers.some((t) => t.id === loser.team.id));
+
+      // Find winners from previous losers bracket
+      const winnersFromLosers = currentRound.matches
+        .filter(
+          (m) =>
+            m.bracket === "losers" &&
+            m.winner &&
+            m.isCompleted &&
+            !m.id.includes("LLWB")
+        )
+        .map((m) => ({
+          team: m.winner!,
+          matchId: m.id,
+          matchIndex: parseInt(m.id.split("-")[1])
+        }))
+        .filter((winner) =>
+          eligibleLosers.some((t) => t.id === winner.team.id)
+        );
+
+      // For final rounds, pair remaining teams
+      const allLosersBracketTeams = [
+        ...winnersFromLosers,
+        ...justDroppedFromWinners
+      ];
+      allLosersBracketTeams.sort((a, b) => a.matchIndex - b.matchIndex);
+
+      for (let i = 0; i < allLosersBracketTeams.length; i += 2) {
+        if (i + 1 < allLosersBracketTeams.length) {
+          nextRoundMatches.push(
+            createMatch(
+              `L${nextRoundNumber}-${Math.floor(i / 2) + 1}`,
+              nextRoundNumber,
+              allLosersBracketTeams[i].team,
+              allLosersBracketTeams[i + 1].team,
+              false,
+              "losers"
+            )
+          );
+        } else if (allLosersBracketTeams.length % 2 !== 0) {
+          // Handle odd number with a bye
+          nextRoundMatches.push(
+            createMatch(
+              `L${nextRoundNumber}-${Math.floor(i / 2) + 1}`,
+              nextRoundNumber,
+              allLosersBracketTeams[i].team,
+              null,
+              true,
+              "losers"
+            )
+          );
+        }
+      }
+
+      // Continue showing the LLWB card if applicable
+      if (tournament.losersBracketFinalLoser) {
+        // Check if the LLWB is already in a match this round
+        const llwbAlreadyInMatch = nextRoundMatches.some(
+          (m) =>
+            m.team1?.id === tournament.losersBracketFinalLoser?.id ||
+            m.team2?.id === tournament.losersBracketFinalLoser?.id
+        );
+
+        if (!llwbAlreadyInMatch) {
+          nextRoundMatches.push(
+            createMatch(
+              `LLWB${nextRoundNumber}-1`,
+              nextRoundNumber,
+              tournament.losersBracketFinalLoser,
+              null,
+              true,
               "losers"
             )
           );
         }
       }
     }
-
-    // If we're in round 7 and there's a winner's bracket final loser but no LWB card yet
-    if (
-      nextRoundNumber === 7 &&
-      tournament.winnersBracketFinalLoser &&
-      !lwbCardAdded
-    ) {
-      nextRoundMatches.push(
-        createMatch(
-          `LWB${nextRoundNumber}-1`,
-          nextRoundNumber,
-          tournament.winnersBracketFinalLoser,
-          null,
-          true,
-          "losers"
-        )
-      );
-      lwbCardAdded = true;
-    }
   }
 
-  // --- Winner detection logic ---
+  // Winner detection logic
   let winner: Team | undefined = tournament.winner;
 
   if (isChampionshipRound) {
-    // Find the last championship match played
     const lastChampMatch =
       championshipMatches[0] ||
       prevChampionshipMatches[prevChampionshipMatches.length - 1];
@@ -657,23 +1182,20 @@ export const advanceToNextRound = (tournament: Tournament): Tournament => {
       const losersBracketTeamWon =
         losersBracketTeam && lastChampMatch.winner.id === losersBracketTeam.id;
 
-      // If loser's bracket team won first championship match, winner's bracket team gets another chance
       if (losersBracketTeamWon && tournament.championshipMatchesPlayed === 1) {
         winner = undefined; // No winner yet, need reset match
       } else {
-        // Either winner's bracket team won first match, or this was the reset match
         winner = lastChampMatch.winner;
       }
     }
   }
 
-  // --- INFINITE RECURSION GUARD ---
+  // Infinite recursion guard
   const noMoreMatches =
     (isChampionshipRound && championshipMatches.length === 0) ||
     (!isChampionshipRound && nextRoundMatches.length === 0);
 
   if (noMoreMatches) {
-    // Tournament is over, do not advance further
     return {
       ...tournament,
       winner,
@@ -681,25 +1203,7 @@ export const advanceToNextRound = (tournament: Tournament): Tournament => {
     };
   }
 
-  // Ensure LWB card is added for round 7 if it hasn't been added yet
-  if (
-    nextRoundNumber === 7 &&
-    tournament.winnersBracketFinalLoser &&
-    !lwbCardAdded
-  ) {
-    nextRoundMatches.push(
-      createMatch(
-        `LWB${nextRoundNumber}-1`,
-        nextRoundNumber,
-        tournament.winnersBracketFinalLoser,
-        null,
-        true,
-        "losers"
-      )
-    );
-  }
-
-  // Compose the new tournament object
+  // Return updated tournament
   return {
     ...tournament,
     rounds: [
@@ -722,6 +1226,7 @@ export const advanceToNextRound = (tournament: Tournament): Tournament => {
       ? tournament.championshipMatchesPlayed + 1
       : tournament.championshipMatchesPlayed,
     winnersBracketFinalLoser: tournament.winnersBracketFinalLoser,
+    losersBracketFinalLoser: tournament.losersBracketFinalLoser,
     winner
   };
 };
