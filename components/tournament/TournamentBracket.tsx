@@ -145,31 +145,7 @@ const getRoundTableNumbers = (winners: any[], losers: any[], championship: any[]
 
 return (
     <div className="w-full">
-      {/* Reset Tournament & Reset Current Round Buttons */}
-      <div className="flex justify-end mb-4 gap-2">
-        <button
-          className="px-4 py-2 border border-red-500 text-red-500 rounded hover:bg-red-50 transition-colors font-semibold"
-          onClick={() => {
-            if (typeof (window as any).onResetRound === 'function') {
-              (window as any).onResetRound();
-            } else {
-              window.location.reload();
-            }
-          }}
-        >
-          Reset Tournament
-        </button>
-        <button
-          className="px-4 py-2 border border-blue-500 text-blue-500 rounded hover:bg-blue-50 transition-colors font-semibold"
-          onClick={() => {
-            if (onResetCurrentRound) {
-              onResetCurrentRound();
-            }
-          }}
-        >
-          Reset Current Round
-        </button>
-      </div>
+      {/* Tournament bracket content */}
 
       {/* Scroll to top after round/tab change */}
       

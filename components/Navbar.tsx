@@ -26,7 +26,7 @@ const Navbar = () => {
     <>
       <Link
         href="/tournament"
-        className="text-white md:text-purple-700 hover:text-white md:hover:text-purple-900 font-semibold"
+        className="text-white md:text-purple-800 hover:text-white md:hover:text-purple-900 font-semibold"
         onClick={() => setMenuOpen(false)}
       >
         Tournament
@@ -82,22 +82,22 @@ const Navbar = () => {
 
       {/* Hamburger Button */}
       <button
-        className="md:hidden flex flex-col justify-center items-center w-10 h-10 focus:outline-none z-30"
+        className="md:hidden flex flex-col justify-center items-center w-10 h-10 display-hidden focus:outline-none z-30"
         aria-label="Open Menu"
         onClick={() => setMenuOpen((open) => !open)}
       >
         <span
-          className={`block w-7 h-1 bg-purple-700 rounded transition-all duration-300 ${
+          className={`block w-7 h-1 bg-purple-500 rounded transition-all duration-300 ${
             menuOpen ? "rotate-45 translate-y-2  -bg-gray-800" : ""
           }`}
         ></span>
         <span
-          className={`block w-5 h-1 bg-purple-700 rounded mt-1.5 transition-all duration-300 ${
+          className={`block w-5 h-1 bg-purple-500 rounded mt-1.5 transition-all duration-300 ${
             menuOpen ? "opacity-0" : ""
           }`}
         ></span>
         <span
-          className={`block w-7 h-1 bg-purple-700 rounded mt-1.5 transition-all duration-300 ${
+          className={`block w-7 h-1 bg-purple-500 rounded mt-1.5 transition-all duration-300 ${
             menuOpen ? "-rotate-45 -translate-y-2 " : ""
           }`}
         ></span>
@@ -105,7 +105,7 @@ const Navbar = () => {
 
       {/* Mobile Slide-in Menu */}
       <div
-        className={`fixed top-0 right-0 h-full w-72 bg-purple-700 bg-opacity-80 backdrop-blur shadow-lg z-20 transform transition-transform duration-300 ease-in-out
+        className={`fixed top-0 right-0 h-full w-72 bg-purple-800 bg-opacity-80 backdrop-blur shadow-lg z-20 transform transition-transform duration-300 ease-in-out
         ${menuOpen ? "translate-x-0" : "translate-x-full"}
         flex flex-col`}
       >
@@ -119,7 +119,7 @@ const Navbar = () => {
             />
           </Link>
           <button
-            className="text-2xl font-bold text-gray-700 focus:outline-none"
+            className="hidden md:block text-2xl font-bold text-gray-700 focus:outline-none"
             onClick={() => setMenuOpen(false)}
             aria-label="Close Menu"
           >

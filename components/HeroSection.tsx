@@ -10,7 +10,7 @@ const HeroSection: React.FC = () => {
       <main className="min-h-screen flex flex-col items-center justify-center bg-gradient-to-br from-black-600 to-black-800 relative">
         {/* Optional: Background image/texture */}
         <img
-          src="/95.jpg"
+          src="/bg_b.jpg"
           alt=""
           className="absolute inset-0 w-full h-full object-cover opacity-30 z-0"
         />
@@ -31,7 +31,7 @@ const HeroSection: React.FC = () => {
   </p>
   <div className="flex gap-4">
     <a
-      href="/register"
+      href="/tournament"
       className="px-6 py-3 bg-secondary text-white font-bold rounded-lg shadow-lg hover:bg-secondary-foreground hover:text-secondary transition border-2 border-secondary"
     >
       Get Started

@@ -1,4 +1,4 @@
-// File: /Users/webtrova/Documents/GitHub/tourneyV5/app/layout.tsx
+// File: /Users/webtrova/Documents/GitHub/tourney_morel/app/layout.tsx
 import * as entry from '../../../app/layout.js'
 import type { ResolvingMetadata, ResolvingViewport } from 'next/dist/lib/metadata/types/metadata-interface.js'
 

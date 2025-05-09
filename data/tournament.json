@@ -1,0 +1,414 @@
+{
+  "rounds": [
+    {
+      "roundNumber": 1,
+      "matches": [
+        {
+          "id": "W1-1",
+          "roundNumber": 1,
+          "team1": {
+            "id": "nyy",
+            "name": "Yankees",
+            "city": "New York",
+            "losses": 0
+          },
+          "team2": {
+            "id": "bos",
+            "name": "Red Sox",
+            "city": "Boston",
+            "losses": 0
+          },
+          "isCompleted": false,
+          "isBye": false,
+          "bracket": "winners",
+          "score": {
+            "team1Score": 0,
+            "team2Score": 0
+          },
+          "nextMatchId": "W2-1",
+          "nextLoserMatchId": "L1-1"
+        },
+        {
+          "id": "W1-2",
+          "roundNumber": 1,
+          "team1": {
+            "id": "tor",
+            "name": "Blue Jays",
+            "city": "Toronto",
+            "losses": 0
+          },
+          "team2": {
+            "id": "tb",
+            "name": "Rays",
+            "city": "Tampa Bay",
+            "losses": 0
+          },
+          "isCompleted": false,
+          "isBye": false,
+          "bracket": "winners",
+          "score": {
+            "team1Score": 0,
+            "team2Score": 0
+          },
+          "nextMatchId": "W2-1",
+          "nextLoserMatchId": "L1-1"
+        },
+        {
+          "id": "W1-3",
+          "roundNumber": 1,
+          "team1": {
+            "id": "bal",
+            "name": "Orioles",
+            "city": "Baltimore",
+            "losses": 0
+          },
+          "team2": {
+            "id": "cws",
+            "name": "White Sox",
+            "city": "Chicago",
+            "losses": 0
+          },
+          "isCompleted": false,
+          "isBye": false,
+          "bracket": "winners",
+          "score": {
+            "team1Score": 0,
+            "team2Score": 0
+          },
+          "nextMatchId": "W2-2",
+          "nextLoserMatchId": "L1-2"
+        },
+        {
+          "id": "W1-4",
+          "roundNumber": 1,
+          "team1": {
+            "id": "cle",
+            "name": "Guardians",
+            "city": "Cleveland",
+            "losses": 0
+          },
+          "team2": {
+            "id": "det",
+            "name": "Tigers",
+            "city": "Detroit",
+            "losses": 0
+          },
+          "isCompleted": false,
+          "isBye": false,
+          "bracket": "winners",
+          "score": {
+            "team1Score": 0,
+            "team2Score": 0
+          },
+          "nextMatchId": "W2-2",
+          "nextLoserMatchId": "L1-2"
+        },
+        {
+          "id": "W1-5",
+          "roundNumber": 1,
+          "team1": {
+            "id": "kc",
+            "name": "Royals",
+            "city": "Kansas City",
+            "losses": 0
+          },
+          "team2": {
+            "id": "min",
+            "name": "Twins",
+            "city": "Minnesota",
+            "losses": 0
+          },
+          "isCompleted": false,
+          "isBye": false,
+          "bracket": "winners",
+          "score": {
+            "team1Score": 0,
+            "team2Score": 0
+          },
+          "nextMatchId": "W2-3",
+          "nextLoserMatchId": "L1-3"
+        },
+        {
+          "id": "W1-6",
+          "roundNumber": 1,
+          "team1": {
+            "id": "hou",
+            "name": "Astros",
+            "city": "Houston",
+            "losses": 0
+          },
+          "team2": {
+            "id": "ana",
+            "name": "Angels",
+            "city": "Los Angeles",
+            "losses": 0
+          },
+          "isCompleted": false,
+          "isBye": false,
+          "bracket": "winners",
+          "score": {
+            "team1Score": 0,
+            "team2Score": 0
+          },
+          "nextMatchId": "W2-3",
+          "nextLoserMatchId": "L1-3"
+        },
+        {
+          "id": "W1-7",
+          "roundNumber": 1,
+          "team1": {
+            "id": "oak",
+            "name": "Athletics",
+            "city": "Oakland",
+            "losses": 0
+          },
+          "team2": {
+            "id": "sea",
+            "name": "Mariners",
+            "city": "Seattle",
+            "losses": 0
+          },
+          "isCompleted": false,
+          "isBye": false,
+          "bracket": "winners",
+          "score": {
+            "team1Score": 0,
+            "team2Score": 0
+          },
+          "nextMatchId": "W2-4",
+          "nextLoserMatchId": "L1-4"
+        },
+        {
+          "id": "W1-8",
+          "roundNumber": 1,
+          "team1": {
+            "id": "tex",
+            "name": "Rangers",
+            "city": "Texas",
+            "losses": 0
+          },
+          "team2": {
+            "id": "atl",
+            "name": "Braves",
+            "city": "Atlanta",
+            "losses": 0
+          },
+          "isCompleted": false,
+          "isBye": false,
+          "bracket": "winners",
+          "score": {
+            "team1Score": 0,
+            "team2Score": 0
+          },
+          "nextMatchId": "W2-4",
+          "nextLoserMatchId": "L1-4"
+        },
+        {
+          "id": "W1-9",
+          "roundNumber": 1,
+          "team1": {
+            "id": "mia",
+            "name": "Marlins",
+            "city": "Miami",
+            "losses": 0
+          },
+          "team2": {
+            "id": "nym",
+            "name": "Mets",
+            "city": "New York",
+            "losses": 0
+          },
+          "isCompleted": false,
+          "isBye": false,
+          "bracket": "winners",
+          "score": {
+            "team1Score": 0,
+            "team2Score": 0
+          },
+          "nextMatchId": "W2-5",
+          "nextLoserMatchId": "L1-5"
+        },
+        {
+          "id": "W1-10",
+          "roundNumber": 1,
+          "team1": {
+            "id": "phi",
+            "name": "Phillies",
+            "city": "Philadelphia",
+            "losses": 0
+          },
+          "team2": {
+            "id": "wsh",
+            "name": "Nationals",
+            "city": "Washington",
+            "losses": 0
+          },
+          "isCompleted": false,
+          "isBye": false,
+          "bracket": "winners",
+          "score": {
+            "team1Score": 0,
+            "team2Score": 0
+          },
+          "nextMatchId": "W2-5",
+          "nextLoserMatchId": "L1-5"
+        },
+        {
+          "id": "W1-11",
+          "roundNumber": 1,
+          "team1": {
+            "id": "chc",
+            "name": "Cubs",
+            "city": "Chicago",
+            "losses": 0
+          },
+          "team2": {
+            "id": "cin",
+            "name": "Reds",
+            "city": "Cincinnati",
+            "losses": 0
+          },
+          "isCompleted": false,
+          "isBye": false,
+          "bracket": "winners",
+          "score": {
+            "team1Score": 0,
+            "team2Score": 0
+          },
+          "nextMatchId": "W2-6",
+          "nextLoserMatchId": "L1-6"
+        },
+        {
+          "id": "W1-12",
+          "roundNumber": 1,
+          "team1": {
+            "id": "mil",
+            "name": "Brewers",
+            "city": "Milwaukee",
+            "losses": 0
+          },
+          "team2": {
+            "id": "pit",
+            "name": "Pirates",
+            "city": "Pittsburgh",
+            "losses": 0
+          },
+          "isCompleted": false,
+          "isBye": false,
+          "bracket": "winners",
+          "score": {
+            "team1Score": 0,
+            "team2Score": 0
+          },
+          "nextMatchId": "W2-6",
+          "nextLoserMatchId": "L1-6"
+        },
+        {
+          "id": "W1-13",
+          "roundNumber": 1,
+          "team1": {
+            "id": "stl",
+            "name": "Cardinals",
+            "city": "St. Louis",
+            "losses": 0
+          },
+          "team2": {
+            "id": "ari",
+            "name": "Diamondbacks",
+            "city": "Arizona",
+            "losses": 0
+          },
+          "isCompleted": false,
+          "isBye": false,
+          "bracket": "winners",
+          "score": {
+            "team1Score": 0,
+            "team2Score": 0
+          },
+          "nextMatchId": "W2-7",
+          "nextLoserMatchId": "L1-7"
+        },
+        {
+          "id": "W1-14",
+          "roundNumber": 1,
+          "team1": {
+            "id": "col",
+            "name": "Rockies",
+            "city": "Colorado",
+            "losses": 0
+          },
+          "team2": {
+            "id": "lad",
+            "name": "Dodgers",
+            "city": "Los Angeles",
+            "losses": 0
+          },
+          "isCompleted": false,
+          "isBye": false,
+          "bracket": "winners",
+          "score": {
+            "team1Score": 0,
+            "team2Score": 0
+          },
+          "nextMatchId": "W2-7",
+          "nextLoserMatchId": "L1-7"
+        },
+        {
+          "id": "W1-15",
+          "roundNumber": 1,
+          "team1": {
+            "id": "sd",
+            "name": "Padres",
+            "city": "San Diego",
+            "losses": 0
+          },
+          "team2": {
+            "id": "sf",
+            "name": "Giants",
+            "city": "San Francisco",
+            "losses": 0
+          },
+          "isCompleted": false,
+          "isBye": false,
+          "bracket": "winners",
+          "score": {
+            "team1Score": 0,
+            "team2Score": 0
+          },
+          "nextMatchId": "W2-8",
+          "nextLoserMatchId": "L1-8"
+        },
+        {
+          "id": "W1-16",
+          "roundNumber": 1,
+          "team1": {
+            "id": "dom",
+            "name": "Dominican",
+            "city": "RD",
+            "losses": 0
+          },
+          "team2": {
+            "id": "pr",
+            "name": "Boricua",
+            "city": "Puerto Rico",
+            "losses": 0
+          },
+          "isCompleted": false,
+          "isBye": false,
+          "bracket": "winners",
+          "score": {
+            "team1Score": 0,
+            "team2Score": 0
+          },
+          "nextMatchId": "W2-8",
+          "nextLoserMatchId": "L1-8"
+        }
+      ],
+      "isDoubleElimination": true,
+      "isChampionshipRound": false
+    }
+  ],
+  "currentRound": 1,
+  "eliminatedTeams": [],
+  "championshipMatchesPlayed": 0
+}

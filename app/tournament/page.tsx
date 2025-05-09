@@ -1,29 +1,49 @@
 "use client";
 
-import type { Tournament } from "@/types/tournament/matches";
+import type { Tournament } from "@/types/tournament/matches-morel";
 
 import { TournamentBracket } from "@/components/tournament/TournamentBracket";
 import type { Team } from "@/types/tournament/mlb-teams";
-import { mlbTeams, nflTeams, nbaTeams, League, Match } from "@/types/tournament";
+import {
+  mlbTeams,
+  nflTeams,
+  nbaTeams,
+  League,
+  Match
+} from "@/types/tournament";
+import { initializeBracketTournament } from "@/utils/tournament/initializeBracketTournament";
 
 import {
   createInitialRounds,
   updateMatchScore,
-  advanceToNextRound
-} from "@/types/tournament/matches";
+  advanceToNextRound,
+  TournamentModel,
+  setTournamentModel
+} from "@/utils/tournament/modelSwitcher";
 import { useState, useCallback, useEffect } from "react";
 
 import SplashAuthGuard from "@/components/SplashAuthGuard";
+import TournamentControls from "@/components/TournamentControls";
 
 function TournamentPageContent() {
   const [selectedLeague, setSelectedLeague] = useState<League>(League.MLB);
+  const [currentModel, setCurrentModel] = useState<TournamentModel>(TournamentModel.MOREL);
   const [tournament, setTournament] = useState<Tournament>(() => {
     // Clear any cached state
     if (typeof window !== "undefined") {
       localStorage.removeItem("tournamentState");
     }
-    return createInitialRounds(mlbTeams.teams);
+    // Use our custom bracket initialization
+    return initializeBracketTournament();
   });
+  
+  // Handle model change
+  const handleModelChange = useCallback((model: TournamentModel) => {
+    setCurrentModel(model);
+    setTournamentModel(model);
+    // Reset tournament with the new model
+    setTournament(initializeBracketTournament());
+  }, []);
 
   // Defensive guard: render error if tournament is ever undefined
   if (!tournament) {
@@ -68,28 +88,37 @@ function TournamentPageContent() {
 
   // Reset tournament handler
   const handleReset = useCallback(() => {
-    let leagueTeams;
-    if (selectedLeague === League.MLB) {
-      leagueTeams = mlbTeams.teams;
-    } else if (selectedLeague === League.NFL) {
-      leagueTeams = nflTeams.teams;
-    } else {
-      leagueTeams = nbaTeams.teams;
+    // Always reset to our custom bracket
+    setTournament(initializeBracketTournament());
+  }, []);
+
+  // Refresh tournament data from API
+  const refreshTournament = useCallback(async () => {
+    try {
+      const response = await fetch('/api/tournament');
+      if (response.ok) {
+        const data = await response.json();
+        setTournament(data);
+      }
+    } catch (error) {
+      console.error('Error refreshing tournament data:', error);
     }
-    leagueTeams.forEach((team) => (team.losses = 0));
-    setTournament(createInitialRounds(leagueTeams));
-  }, [selectedLeague]);
+  }, []);
 
   // Reset current round handler
   const handleResetCurrentRound = useCallback(() => {
     setTournament((currentTournament: Tournament) => {
       const currentRoundIdx = currentTournament.currentRound - 1;
-      if (currentRoundIdx < 0 || currentRoundIdx >= currentTournament.rounds.length) return currentTournament;
+      if (
+        currentRoundIdx < 0 ||
+        currentRoundIdx >= currentTournament.rounds.length
+      )
+        return currentTournament;
       const updatedRounds = currentTournament.rounds.map((round, idx) => {
         if (idx !== currentRoundIdx) return round;
         return {
           ...round,
-          matches: round.matches.map(match => ({
+          matches: round.matches.map((match) => ({
             ...match,
             score: { team1Score: 0, team2Score: 0 },
             isCompleted: false,
@@ -112,13 +141,8 @@ function TournamentPageContent() {
           <h1 className="text-3xl font-bold text-gray-900">
             Tournament Bracket
           </h1>
-          <button
-            onClick={handleReset}
-            className="px-4 py-2 bg-red-600 text-white rounded hover:bg-red-700"
-          >
-            Reset Tournament
-          </button>
         </div>
+
         {/* League Switcher */}
         <div className="flex justify-center mb-6 gap-4">
           {/* Stylish League Buttons */}
@@ -193,6 +217,13 @@ function TournamentPageContent() {
             <span className="font-bold text-lg tracking-wide">NBA</span>
           </button>
         </div>
+        {/* Tournament Controls */}
+        <TournamentControls 
+          onTournamentUpdate={handleReset} 
+          onModelChange={handleModelChange}
+          onResetCurrentRound={handleResetCurrentRound}
+        />
+        
         {/* Tournament Bracket */}
         <TournamentBracket
           tournament={tournament}
@@ -210,7 +241,8 @@ function TournamentPageContent() {
                 ? mlbTeams.teams.length
                 : selectedLeague === League.NFL
                 ? nflTeams.teams.length
-                : nbaTeams.teams.length) - (tournament?.eliminatedTeams?.length ?? 0)}
+                : nbaTeams.teams.length) -
+                (tournament?.eliminatedTeams?.length ?? 0)}
             </p>
           </div>
           <div className="bg-red-50 p-4 rounded-lg overflow-auto max-h-40">
@@ -263,4 +295,4 @@ export default function TournamentPage() {
       <TournamentPageContent />
     </SplashAuthGuard>
   );
-} 
+}
